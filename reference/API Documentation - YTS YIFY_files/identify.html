@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<!-- saved from url=(0046)https://ufpcdn.com/script/identify.html?frmt=0 -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <title>i</title>
+  <script type="text/javascript">(function(f){function c(a){if(e[a])return e[a].a;var b=e[a]={o:a,g:!1,a:{}};f[a].call(b.a,b,b.a,c);b.g=!0;return b.a}var e={};c.m=f;c.i=e;c.c=function(a,b){c.f(a)||Object.defineProperty(a,"a",{configurable:!1,enumerable:!0,get:b})};c.j=function(a){var b=a&&a.h?function(){return a["default"]}:function(){return a};c.c(b,b);return b};c.f=function(a){return Object.prototype.hasOwnProperty.call(a,"a")};c.l="";return c(c.s=1)})([function(f,c,e){var a,b;(function(h,d,g){!(a=g,b="function"===typeof a?a.call(c,
+e,c,f):a,void 0!==b&&(f.a=b))})("AdCashStorage",this,function(){function a(){if(!(this instanceof a))return new a}a.prototype={isSupported:function(){try{return!!window.localStorage}catch(d){return!1}},set:function(a,b,c){var d="";c&&(d=new Date,d.setTime(d.getTime()+1E3*c),d="; expires\x3d"+d.toGMTString());this.isSupported()&&(0>c?window.localStorage.removeItem(a):window.localStorage.setItem(a,b));document.cookie=a+"\x3d"+b+d+"; path\x3d/"},get:function(a){if(this.isSupported()){var b=window.localStorage.getItem(a);
+switch(b){case "true":return!0;case "false":return!1;default:if(null!==b)return b}}a+="\x3d";b=document.cookie.split(";");for(var c=0;c<b.length;c++){for(var d=b[c];" "===d.charAt(0);)d=d.substring(1,d.length);if(0===d.indexOf(a))switch(b=d.substring(a.length,d.length),b){case "true":return!0;case "false":return!1;default:return b}}return!1}};a.c="1.0.1";return a})},function(f,c,e){var a=e(0);(function(){var b=new a,c=b.get("adcashufpv3");b.set("adcashufp","",-1);b.set("adcashufpv1","",-1);b.set("adcashufpv2",
+"",-1);""==c&&(String.prototype.b=function(){var a=0;if(0==this.length)return a;for(var b=0;b<this.length;b++)a=(a<<5)-a+this.charCodeAt(b),a&=a;return Math.abs(a)},c=function(){Date.now||(Date.now=function(){return(new Date).getTime()});return(""+Math.abs(Math.random())).b()+""+(""+Date.now()).b()+(""+Math.abs(Math.random())).b()}());b.set("adcashufpv3",c);try{window.top.postMessage&&window.top.postMessage({call:"ufpCached",ufp:c},"*")}catch(d){}})()}]);</script><style type="text/css">.c1-ui-state-hover {background-color:yellow !important; padding:5px !important }</style></head>
+  <body>
+  
+
+</body></html>
