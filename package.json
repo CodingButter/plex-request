@@ -13,8 +13,16 @@
   "dependencies": {
     "aria2": "^4.1.2",
     "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "localtunnel": "^2.0.1",
-    "node-torrent": "^0.2.2"
+    "nightmare": "^3.0.2",
+    "nightmare-real-mouse": "^1.1.0",
+    "nightmare-window-manager": "^0.2.2",
+    "open": "^8.2.1",
+    "robotjs": "^0.6.0",
+    "shelljs": "^0.8.4",
+    "similarity": "^1.2.1",
+    "torrent-search-api": "^2.1.4"
   }
 }

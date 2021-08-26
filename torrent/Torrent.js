@@ -1,56 +1,71 @@
-const Torrent = (aria2, hash, guid, poster, title) => {
-  var torrentStatus;
+class Torrent {
+  constructor({ aria2, magnet, guid, poster, title, tmdb }) {
+    this.torrentStatus = {
+      magnet,
+      poster,
+      title,
+      gid: guid,
+      tmdb,
+      completedLength: 0,
+      totalLength: 0,
+    };
+    this.aria2 = aria2;
+    this.tmdb = tmdb;
+    this.guid = guid;
+    this.poster = poster;
+    this.title = title;
+  }
+
   //getters
-  const getStatus = async () => {
+  async getStatus() {
+    const currentStatus = this.torrentStatus.status;
     try {
-      const status = await aria2.call("tellStatus", guid);
+      const status = await this.aria2.call("tellStatus", this.guid);
       if (status.files && status.followedBy) {
         status.files = await Promise.all(
           status.followedBy.map(async (gid) => {
-            return await aria2.call("tellStatus", gid);
+            return await this.aria2.call("tellStatus", gid);
           })
         );
+
+        this.torrentStatus = {
+          ...this.torrentStatus,
+          ...status.files.filter(({ status }) => status == "active")[0],
+        };
       }
-      status.title = title;
-      status.poster = poster;
-      console.log(poster, title);
-      torrentStatus = status;
-      return status;
+      return this.torrentStatus;
     } catch (err) {
-      torrentStatus.status = "complete";
-      return torrentStatus;
+      return this.torrentStatus;
     }
-  };
+  }
 
-  const getFiles = async () => {
-    return await aria2.call("getFiles", guid);
-  };
+  getLastStatus() {
+    return this.torrentStatus;
+  }
 
-  const getHash = () => hash;
-  const getGuid = () => guid;
+  async getFiles() {
+    return await this.aria2.call("getFiles", this.guid);
+  }
 
-  const stop = async () => {
-    return await aria2.call("remove", guid);
-  };
+  getTMDB() {
+    return this.tmdb;
+  }
+  getGuid() {
+    return this.guid;
+  }
+  async stop() {
+    return await this.aria2.call("remove", this.guid);
+  }
 
-  const tell = async (key) => {
-    return await aria2.call("tellStatus", guid, [key]);
-  };
+  async tell(key) {
+    return await this.aria2.call("tellStatus", this.guid, [key]);
+  }
 
-  const getDownloadSpeed = async () => {
-    return await aria2.call("tellStatus");
-  };
-  const getTitle = () => title;
-  const getPoster = () => poster;
-  return {
-    getStatus,
-    getHash,
-    getGuid,
-    getFiles,
-    getPoster,
-    getTitle,
-    //Actions
-    stop,
-  };
-};
+  getTitle() {
+    return this.title;
+  }
+  getPoster() {
+    return poster;
+  }
+}
 module.exports = Torrent;

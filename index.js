@@ -5,8 +5,9 @@ const { exec } = require("child_process");
 const express = require("express");
 const cors = require("cors");
 const AriaManager = require("./torrent/AriaManager");
-
+const { downloadSeries, getTVStatus } = require("./tvShows");
 const path = require("path");
+const { searchMovie, searchShow } = require("./torrent/SearchTorrent");
 
 (async () => {
   const ariaManager = await AriaManager("F:\\Plex");
@@ -37,7 +38,24 @@ const path = require("path");
   app.use(cors());
   app.use(express.json());
 
-  app.get("/torrents", async (req, res) => {
+  app.get("/tv", (req, res) => {
+    res.json(getTVStatus());
+  });
+  app.post("/tv", async ({ body }, res) => {
+    downloadSeries(body.title, body.tmdb, body.seasons);
+    res.json({ status: "downloading tv show" });
+  });
+
+  app.post("/search/movies", async ({ body }, res) => {
+    console.log(body);
+    res.json(await searchMovie(body.title, body.year));
+  });
+
+  app.post("/search/shows", async ({ body }, res) => {
+    console.log(body);
+    res.json(await searchShow(body.title, body.year));
+  });
+  app.get("/movies", async (req, res) => {
     res.json(await ariaManager.getTorrents());
   });
   app.get("/refresh", (req, res) => {
@@ -47,23 +65,27 @@ const path = require("path");
   app.post("/local", (req, res) => {
     res.json({ local: false });
   });
-  app.post("/", async ({ body: { url: magnet, hash, title, poster } }, res) => {
-    if (magnet && hash) {
-      if (ariaManager.getTorrent(hash)) {
-        res.json({ status: await ariaManager.getTorrent(hash).getStatus() });
-        return;
+  app.post(
+    "/",
+    async ({ body: { url: magnet, hash, tmdb, title, poster } }, res) => {
+      if (hash) tmdb = hash;
+      if (magnet && tmdb) {
+        if (ariaManager.getTorrent(tmdb)) {
+          res.json({ status: await ariaManager.getTorrent(tmdb).getStatus() });
+          return;
+        }
+        const activeTorrent = await ariaManager.addTorrent({
+          tmdb,
+          magnet,
+          title,
+          poster,
+        });
+        res.json({ status: "loading" });
+      } else {
+        res.json({ status: "no torrent provided" });
       }
-      const activeTorrent = await ariaManager.addTorrent({
-        hash,
-        magnet,
-        title,
-        poster,
-      });
-      res.json({ status: "loading" });
-    } else {
-      res.json({ status: "no torrent provided" });
     }
-  });
+  );
   app.post("/info", async (req, res) => {
     res.json(await ariaManager.getSessionInfo());
   });
