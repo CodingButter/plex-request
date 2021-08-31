@@ -1,5 +1,7 @@
+const fs = require("fs");
+const { downloadSeries } = require("../tvShows");
 class Torrent {
-  constructor({ aria2, magnet, guid, poster, title, tmdb }) {
+  constructor({ aria2, mediaType, magnet, guid, poster, title, tmdb }) {
     this.torrentStatus = {
       magnet,
       poster,
@@ -8,6 +10,7 @@ class Torrent {
       tmdb,
       completedLength: 0,
       totalLength: 0,
+      mediaType,
     };
     this.aria2 = aria2;
     this.tmdb = tmdb;
@@ -18,6 +21,11 @@ class Torrent {
 
   //getters
   async getStatus() {
+    const totalFileStatus = {
+      completedLength: 0,
+      totalLength: 0,
+      downloadSpeed: 0,
+    };
     const currentStatus = this.torrentStatus.status;
     try {
       const status = await this.aria2.call("tellStatus", this.guid);
@@ -27,15 +35,25 @@ class Torrent {
             return await this.aria2.call("tellStatus", gid);
           })
         );
-
-        this.torrentStatus = {
-          ...this.torrentStatus,
-          ...status.files.filter(({ status }) => status == "active")[0],
-        };
       }
+      fs.writeFileSync("./torrentInfo.json", JSON.stringify(status.files));
+
+      status.files.forEach(
+        ({ completedLength, totalLength, downloadSpeed }) => {
+          totalFileStatus.completedLength += parseInt(completedLength);
+          totalFileStatus.totalLength += parseInt(totalLength);
+          totalFileStatus.downloadSpeed += parseInt(downloadSpeed);
+        }
+      );
+      this.torrentStatus = {
+        ...this.torrentStatus,
+        ...status,
+        ...totalFileStatus,
+      };
       return this.torrentStatus;
     } catch (err) {
-      return this.torrentStatus;
+      console.log(err);
+      return false;
     }
   }
 

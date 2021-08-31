@@ -2,12 +2,16 @@ const fs = require("fs");
 const http = require("http");
 const https = require("https");
 const { exec } = require("child_process");
+const compression = require("compression");
 const express = require("express");
 const cors = require("cors");
 const AriaManager = require("./torrent/AriaManager");
 const { downloadSeries, getTVStatus } = require("./tvShows");
 const path = require("path");
 const { searchMovie, searchShow } = require("./torrent/SearchTorrent");
+const { url } = require("inspector");
+const { response } = require("express");
+const fetch = require("node-fetch");
 
 (async () => {
   const ariaManager = await AriaManager("F:\\Plex");
@@ -33,11 +37,22 @@ const { searchMovie, searchShow } = require("./torrent/SearchTorrent");
     size,
     name,
   });
-
-  app.use(express.static("frontend/build"));
+  app.use(compression());
+  app.use("/frontend", express.static("frontend/build"));
   app.use(cors());
   app.use(express.json());
 
+  app.get("/testing", async (req, res) => {
+    const response = await fetch(
+      "https://www.2embed.ru/embed/tmdb/tv?id=2317&s=1&e=1"
+    );
+    var htmlstring = await response.text();
+    htmlstring = htmlstring.replace(/\/js\//g, "https://2embed.ru/js/");
+    htmlstring = htmlstring.replace("app.min.js", "");
+    htmlstring = htmlstring.replace(/\/css\//g, "https://2embed.ru/css/");
+    htmlstring = htmlstring.replace(/\/images\//g, "https://2embed.ru/images/");
+    res.send(htmlstring);
+  });
   app.get("/tv", (req, res) => {
     res.json(getTVStatus());
   });
@@ -48,7 +63,7 @@ const { searchMovie, searchShow } = require("./torrent/SearchTorrent");
 
   app.post("/search/movies", async ({ body }, res) => {
     console.log(body);
-    res.json(await searchMovie(body.title, body.year));
+    res.json(await searchMovie(body.title, body.year, body.imdb));
   });
 
   app.post("/search/shows", async ({ body }, res) => {
@@ -67,8 +82,7 @@ const { searchMovie, searchShow } = require("./torrent/SearchTorrent");
   });
   app.post(
     "/",
-    async ({ body: { url: magnet, hash, tmdb, title, poster } }, res) => {
-      if (hash) tmdb = hash;
+    async ({ body: { mediaType, magnet, tmdb, title, poster } }, res) => {
       if (magnet && tmdb) {
         if (ariaManager.getTorrent(tmdb)) {
           res.json({ status: await ariaManager.getTorrent(tmdb).getStatus() });
@@ -79,6 +93,7 @@ const { searchMovie, searchShow } = require("./torrent/SearchTorrent");
           magnet,
           title,
           poster,
+          mediaType,
         });
         res.json({ status: "loading" });
       } else {
@@ -92,10 +107,10 @@ const { searchMovie, searchShow } = require("./torrent/SearchTorrent");
   //create node.js http server and listen on port
   var httpServer = http.createServer(app);
   var httpsServer = https.createServer(credentials, app);
-  httpServer.listen(80, () => {
-    console.log(`Listening on port 80`);
+  httpServer.listen(process.env.HTTP_SERVER_PORT, () => {
+    console.log(`Listening on port ${process.env.HTTP_SERVER_PORT}`);
   });
-  httpsServer.listen(443, () => {
-    console.log(`Listening on port 443`);
+  httpsServer.listen(process.env.HTTPS_SERVER_PORT, () => {
+    console.log(`Listening on port ${process.env.HTTPS_SERVER_PORT}`);
   });
 })();

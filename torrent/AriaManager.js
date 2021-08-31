@@ -1,16 +1,17 @@
 const fs = require("fs");
 const { spawn } = require("child_process");
-
+require("dotenv").config();
 const Aria2 = require("aria2");
 const Torrent = require("./Torrent");
 var ariaProcess;
 const torrents = [];
 const torrentList = "./torrentList.json";
 //const dir = "F:/tmp";
-const dir = "F:/Plex/Movies";
+const movieDir = "F:/Plex/Movies";
+const tvDir = "F:/Plex/TV";
 const aria2 = new Aria2({
   host: "localhost",
-  port: 6800,
+  port: process.env.ARIA_PORT,
   secure: false,
   secret: "",
   path: "/jsonrpc",
@@ -40,6 +41,7 @@ const start = async () => {
   ariaProcess = spawn(
     "aria2c",
     [
+      `--rpc-listen-port=${process.env.ARIA_PORT}`,
       "--always-resume",
       "--enable-rpc",
       "--rpc-listen-all=true",
@@ -48,6 +50,7 @@ const start = async () => {
       "--continue=true",
       "--max-concurrent-downloads=12",
       "--max-overall-upload-limit=0",
+      "--file-allocation=none",
     ],
     { detached: true, shell: true }
   );
@@ -72,12 +75,12 @@ module.exports = async () => {
     return resp;
   };
 
-  const addTorrent = async ({ tmdb, magnet, poster, title }) => {
+  const addTorrent = async ({ mediaType, tmdb, magnet, poster, title }) => {
     var torrent = getTorrent(tmdb);
     if (!torrent) {
       try {
         const guid = await aria2.call("addUri", [magnet], {
-          dir,
+          dir: mediaType === "movie" ? movieDir : tvDir,
           "seed-time": 0,
         });
         var torrent = new Torrent({
@@ -88,6 +91,7 @@ module.exports = async () => {
           poster,
           title,
           tmdb,
+          mediaType,
         });
         torrents.push(torrent);
         writeTorrents();
@@ -99,10 +103,12 @@ module.exports = async () => {
   };
   const getTorrents = async () => {
     return await Promise.all(
-      torrents.map((torrent, index) => {
-        const status = torrent.getStatus();
-        return status;
-      })
+      torrents
+        .map(async (torrent, index) => {
+          const status = await torrent.getStatus();
+          return status;
+        })
+        .filter((status) => status != false)
     );
   };
 
@@ -129,6 +135,7 @@ module.exports = async () => {
       addTorrent(torrent)
     );
   const writeTorrents = () => {
+    console.log("Updating Torrent List File");
     fs.writeFileSync(
       torrentList,
       JSON.stringify(torrents.map(({ torrentStatus }) => torrentStatus))
@@ -143,7 +150,7 @@ module.exports = async () => {
       torrents.splice(torrents.indexOf(torrent), 1);
       writeTorrents();
       //moveToPlex(torrent);
-      await aria2.call("purgeDownloadResult");
+      //a6await aria2.call("purgeDownloadResult");
     }
   };
   aria2.on("onDownloadError", removeCompleted);
@@ -160,6 +167,7 @@ module.exports = async () => {
 process.stdin.resume(); //so the program will not close instantly
 
 function exitHandler(options, exitCode) {
+  console.log({ exitCode });
   if (options.exit) process.exit();
 }
 //do something when app is closing
