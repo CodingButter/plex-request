@@ -54,8 +54,9 @@ module.exports.searchMovie = async (title, year, imdb) => {
   TorrentSearchApi.disableProvider("Limetorrents");
   TorrentSearchApi.disableProvider("Nyaa");
   TorrentSearchApi.disableProvider("TorrentDownload");
-
+  TorrentSearchApi.enableProvider("Yts");
   var query = imdb;
+  console.log("Searching Yts By IMDB");
   var results = await TorrentSearchApi.search(query, ["ALL"], 500);
   // results.sort((result1, result2) => {
   //   if (result1.provider === "Yts" && result2.provider !== "Yts")
@@ -67,9 +68,11 @@ module.exports.searchMovie = async (title, year, imdb) => {
 
   if (results.length == 0) {
     var query = `${title} ${year}`;
+    console.log("Searching Yts By Title and Year");
     var results = await TorrentSearchApi.search(query, ["ALL"], 500);
   }
   if (results.length == 0) {
+    console.log("Searching All Providers By Title and Year");
     TorrentSearchApi.enableProvider("ThePirateBay");
     TorrentSearchApi.enableProvider("KickassTorrents");
     TorrentSearchApi.enableProvider("Eztv");

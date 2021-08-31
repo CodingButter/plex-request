@@ -1,7 +1,16 @@
 const fs = require("fs");
 const { downloadSeries } = require("../tvShows");
 class Torrent {
-  constructor({ aria2, mediaType, magnet, guid, poster, title, tmdb }) {
+  constructor({
+    backdrop,
+    aria2,
+    mediaType,
+    magnet,
+    guid,
+    poster,
+    title,
+    tmdb,
+  }) {
     this.torrentStatus = {
       magnet,
       poster,
@@ -11,12 +20,14 @@ class Torrent {
       completedLength: 0,
       totalLength: 0,
       mediaType,
+      backdrop,
     };
     this.aria2 = aria2;
     this.tmdb = tmdb;
     this.guid = guid;
     this.poster = poster;
     this.title = title;
+    this.backdrop = backdrop;
   }
 
   //getters

@@ -75,7 +75,14 @@ module.exports = async () => {
     return resp;
   };
 
-  const addTorrent = async ({ mediaType, tmdb, magnet, poster, title }) => {
+  const addTorrent = async ({
+    mediaType,
+    backdrop,
+    tmdb,
+    magnet,
+    poster,
+    title,
+  }) => {
     var torrent = getTorrent(tmdb);
     if (!torrent) {
       try {
@@ -91,6 +98,7 @@ module.exports = async () => {
           poster,
           title,
           tmdb,
+          backdrop,
           mediaType,
         });
         torrents.push(torrent);

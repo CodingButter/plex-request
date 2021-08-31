@@ -6,6 +6,7 @@ const compression = require("compression");
 const express = require("express");
 const cors = require("cors");
 const AriaManager = require("./torrent/AriaManager");
+const BTClient = require("better-torrent-client");
 const { downloadSeries, getTVStatus } = require("./tvShows");
 const path = require("path");
 const { searchMovie, searchShow } = require("./torrent/SearchTorrent");
@@ -15,7 +16,10 @@ const fetch = require("node-fetch");
 
 (async () => {
   const ariaManager = await AriaManager("F:\\Plex");
-
+  // const torrentClient = new BTClient({
+  //   downloadDirectory: "F:\\Plex",
+  //   port: 3004,
+  // });
   var credentials = {
     key: fs.readFileSync("./sslcert/private.key").toString(),
     cert: fs.readFileSync("./sslcert/certificate.crt").toString(),
@@ -82,7 +86,10 @@ const fetch = require("node-fetch");
   });
   app.post(
     "/",
-    async ({ body: { mediaType, magnet, tmdb, title, poster } }, res) => {
+    async (
+      { body: { mediaType, magnet, tmdb, title, poster, backdrop } },
+      res
+    ) => {
       if (magnet && tmdb) {
         if (ariaManager.getTorrent(tmdb)) {
           res.json({ status: await ariaManager.getTorrent(tmdb).getStatus() });
@@ -93,6 +100,7 @@ const fetch = require("node-fetch");
           magnet,
           title,
           poster,
+          backdrop,
           mediaType,
         });
         res.json({ status: "loading" });
