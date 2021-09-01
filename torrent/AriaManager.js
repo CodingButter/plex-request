@@ -51,6 +51,7 @@ const start = async () => {
       "--max-concurrent-downloads=12",
       "--max-overall-upload-limit=0",
       "--file-allocation=none",
+      "--bt-stop-timeout=60",
     ],
     { detached: true, shell: true }
   );
@@ -83,7 +84,7 @@ module.exports = async () => {
     poster,
     title,
   }) => {
-    var torrent = getTorrent(tmdb);
+    var torrent = await getTorrent(tmdb);
     if (!torrent) {
       try {
         const guid = await aria2.call("addUri", [magnet], {
@@ -110,14 +111,22 @@ module.exports = async () => {
     return torrent;
   };
   const getTorrents = async () => {
-    return await Promise.all(
-      torrents
-        .map(async (torrent, index) => {
-          const status = await torrent.getStatus();
-          return status;
-        })
-        .filter((status) => status != false)
+    const spliceIndexes = [];
+    const torrentInfo = await Promise.all(
+      torrents.map(async (torrent, index) => {
+        const status = await torrent.getStatus();
+        console.log(status);
+        if (status == false || status.status == "stopped")
+          spliceIndexes.push(i);
+        return status;
+      })
     );
+    spliceIndexes.forEach((si) => {
+      torrents.splice(si, 1);
+      writeTorrents();
+    });
+
+    return torrentInfo.filter((status) => status != false);
   };
 
   const getActive = async () => {
@@ -159,6 +168,12 @@ module.exports = async () => {
       writeTorrents();
       //moveToPlex(torrent);
       //a6await aria2.call("purgeDownloadResult");
+    } else {
+      const torrent = await getTorrent(gid);
+      if (torrent) {
+        torrents.splice(torrents.indexOf(torrent), 1);
+        writeTorrents();
+      }
     }
   };
   aria2.on("onDownloadError", removeCompleted);
