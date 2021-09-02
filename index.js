@@ -15,11 +15,13 @@ const { response } = require("express");
 const fetch = require("node-fetch");
 
 (async () => {
-  const ariaManager = await AriaManager("F:\\Plex");
-  // const torrentClient = new BTClient({
-  //   downloadDirectory: "F:\\Plex",
-  //   port: 3004,
-  // });
+  //const ariaManager = await AriaManager("F:\\Plex");
+  const torrentClient = new BTClient({
+    dir: "F:\\Plex\\tmp\\",
+    dest: "F:\\Plex\\",
+    port: process.env.ARIA_PORT,
+  });
+  await torrentClient.connect();
   var credentials = {
     key: fs.readFileSync("./sslcert/private.key").toString(),
     cert: fs.readFileSync("./sslcert/certificate.crt").toString(),
@@ -42,7 +44,6 @@ const fetch = require("node-fetch");
     name,
   });
   app.use(compression());
-  app.use("/frontend", express.static("frontend/build"));
   app.use(cors());
   app.use(express.json());
 
@@ -57,6 +58,7 @@ const fetch = require("node-fetch");
     htmlstring = htmlstring.replace(/\/images\//g, "https://2embed.ru/images/");
     res.send(htmlstring);
   });
+
   app.get("/tv", (req, res) => {
     res.json(getTVStatus());
   });
@@ -74,9 +76,7 @@ const fetch = require("node-fetch");
     console.log(body);
     res.json(await searchShow(body.title, body.year));
   });
-  app.get("/movies", async (req, res) => {
-    res.json(await ariaManager.getTorrents());
-  });
+
   app.get("/refresh", (req, res) => {
     refreshServer();
     res.json({ status: "success" });
@@ -84,35 +84,36 @@ const fetch = require("node-fetch");
   app.post("/local", (req, res) => {
     res.json({ local: false });
   });
-  app.post(
-    "/",
-    async (
-      { body: { mediaType, magnet, tmdb, title, poster, backdrop } },
-      res
-    ) => {
-      if (magnet && tmdb) {
-        if (ariaManager.getTorrent(tmdb)) {
-          res.json({ status: await ariaManager.getTorrent(tmdb).getStatus() });
-          return;
-        }
-        const activeTorrent = await ariaManager.addTorrent({
-          tmdb,
-          magnet,
-          title,
-          poster,
-          backdrop,
-          mediaType,
-        });
-        res.json({ status: "loading" });
-      } else {
-        res.json({ status: "no torrent provided" });
-      }
-    }
-  );
-  app.post("/info", async (req, res) => {
-    res.json(await ariaManager.getSessionInfo());
+  app.post("/add", async ({ body }, res) => {
+    const { magnet, mediaType, include } = body;
+    if (!magnet) res.json({ status: "no torrent provided" });
+    include.mediaType = mediaType;
+    const activeTorrent = await torrentClient.addTorrent(magnet, {
+      include,
+      uuid: include.uuid,
+      dest:
+        mediaType == "show"
+          ? `${torrentClient.options.dest}/TV`
+          : `${torrentClient.options.dest}/Movies`,
+    });
+    await activeTorrent.start();
+    res.json(activeTorrent);
   });
-  //create node.js http server and listen on port
+
+  app.get("/info", async (req, res) => {
+    res.json(await torrentClient.getInfo());
+  });
+  app.post("/remove", async ({ body }, res) => {
+    try {
+      const { uuid } = body;
+      console.log(uuid);
+      await torrentClient.getTorrentById(uuid).remove();
+      res.json({ status: "success" });
+    } catch (err) {
+      res.json(err);
+    }
+  });
+
   var httpServer = http.createServer(app);
   var httpsServer = https.createServer(credentials, app);
   httpServer.listen(process.env.HTTP_SERVER_PORT, () => {
