@@ -34,7 +34,9 @@ module.exports.searchShow = async (title, year) => {
   return await Promise.all(
     results
       .filter((torrent) => {
-        return parseInt(torrent.seeds) > 0;
+        return (
+          parseInt(torrent.seeds) > 0 && similarity(torrent.title, query) > 0.3
+        );
       })
       .map(async (result) => {
         if (result.magnet) return result;
@@ -58,13 +60,6 @@ module.exports.searchMovie = async (title, year, imdb) => {
   var query = imdb;
   console.log("Searching Yts By IMDB");
   var results = await TorrentSearchApi.search(query, ["ALL"], 500);
-  // results.sort((result1, result2) => {
-  //   if (result1.provider === "Yts" && result2.provider !== "Yts")
-  //     return (
-  //       -1 ||
-  //       similarity(result2.title, query) - similarity(result1.title, query)
-  //     );
-  // });
 
   if (results.length == 0) {
     var query = `${title} ${year}`;

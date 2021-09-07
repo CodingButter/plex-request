@@ -5,21 +5,29 @@ const { exec } = require("child_process");
 const compression = require("compression");
 const express = require("express");
 const cors = require("cors");
-const AriaManager = require("./torrent/AriaManager");
 const BTClient = require("better-torrent-client");
 const { downloadSeries, getTVStatus } = require("./tvShows");
-const path = require("path");
 const { searchMovie, searchShow } = require("./torrent/SearchTorrent");
 const { url } = require("inspector");
 const { response } = require("express");
 const fetch = require("node-fetch");
+require("dotenv").config();
 
 (async () => {
   //const ariaManager = await AriaManager("F:\\Plex");
   const torrentClient = new BTClient({
-    dir: "F:\\Plex\\tmp\\",
-    dest: "F:\\Plex\\",
+    dir: process.env.PLEX_TMP,
     port: process.env.ARIA_PORT,
+    aria2: {
+      spawnOptions: {
+        detached: true,
+        shell: true,
+      },
+      perameters: {
+        "seed-time": 0,
+        "seed-ratio": 0,
+      },
+    },
   });
   await torrentClient.connect();
   var credentials = {
@@ -93,8 +101,8 @@ const fetch = require("node-fetch");
       uuid: include.uuid,
       dest:
         mediaType == "show"
-          ? `${torrentClient.options.dest}/TV`
-          : `${torrentClient.options.dest}/Movies`,
+          ? process.env.PLEX_TV_LIBRARY
+          : process.env.PLEX_MOVIE_LIBRARY,
     });
     await activeTorrent.start();
     res.json(activeTorrent);
@@ -105,8 +113,8 @@ const fetch = require("node-fetch");
   });
   app.post("/remove", async ({ body }, res) => {
     try {
+      console.log(body);
       const { uuid } = body;
-      console.log(uuid);
       await torrentClient.getTorrentById(uuid).remove();
       res.json({ status: "success" });
     } catch (err) {
